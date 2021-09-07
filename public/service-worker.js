@@ -45,42 +45,75 @@ self.addEventListener('activate', event => {
     );
 });
 
-self.addEventListener('fetch', (event) => {
-    if (
-        event.request.method !== "GET" ||
-        !event.request.url.startsWith(self.location.origin)
-    ) {event.respondWith(fetch(event.request));
-        return;
-    }
+// self.addEventListener('fetch', (event) => {
+//     if (
+//         event.request.method !== "GET" ||
+//         !event.request.url.startsWith(self.location.origin)
+//     ) {event.respondWith(fetch(event.request));
+//         return;
+//     }
 
-    if (event.request.url.includes('/api/')) {
+//     if (event.request.url.includes('/api/')) {
 
+//         event.respondWith(
+//             caches.open(INPUT_CACHE_NAME).then((cache) => {
+//                 return fetch(event.request)
+//                     .then((response) => {
+//                         cache.put(event.request, response.clone());
+//                         return response;
+//                     })
+//                     .cache(() => caches.match(event.request));
+//             })
+//         );
+//         return;
+//     }
+
+//     event.respondWith(
+//         caches.match(event.request).then((cachedResponse) => {
+//             if (cachedResponse) {
+//                 return cachedResponse;
+//             }
+
+//             return caches.open(INPUT_CACHE_NAME).then((cache) => {
+//                 return fetch(event.request).then((response) => {
+//                     return cache.put(event.request, response.clone()).then(() => {
+//                         return response;
+//                     });
+//                 });
+//             });
+//         })
+//     );
+// });
+
+self.addEventListener("fetch", function (event) {
+    if(event.request.url.includes("/api/")) {
         event.respondWith(
-            caches.open(INPUT_CACHE_NAME).then((cache) => {
+            caches.open(INPUT_CACHE_NAME).then(cache => {
                 return fetch(event.request)
-                    .then((response) => {
-                        cache.put(event.request, response.clone());
-                        return response;
-                    })
-                    .cache(() => caches.match(event.request));
-            })
-        );
+                .then(response => {
+                    if (response.status === 200 ){
+                        cache.put(event.request.url, response.clone());
+                    }
+                    return response;
+                })
+                .catch(err => {
+                    return cache.match(event.request);
+                })
+            }).catch(err => console.log(err))
+        )
+
         return;
     }
 
     event.respondWith(
-        caches.match(event.request).then((cachedResponse) => {
-            if (cachedResponse) {
-                return cachedResponse;
-            }
-
-            return caches.open(INPUT_CACHE_NAME).then((cache) => {
-                return fetch(event.request).then((response) => {
-                    return cache.put(event.request, response.clone()).then(() => {
-                        return response;
-                    });
-                });
-            });
+        fetch(event.request).catch(function() {
+            return caches.match(event.request).then(function(response) {
+                if(response) {
+                    return response;
+                }else if (event.request.headers.get("accept").includes("text/html")) {
+                    return caches.match('/')
+                }
+            })
         })
-    );
-});
+    )
+})
