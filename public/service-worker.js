@@ -1,3 +1,4 @@
+// retrieved from mini project tracker
 const FILES_TO_CACHE = [
     "/",
     "index.html",
